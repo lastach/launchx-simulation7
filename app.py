@@ -9,7 +9,7 @@ from collections import defaultdict
 # ---------------------------------------------------------------------------
 st.set_page_config(
     page_title="The Runway Game",
-    page_icon="ð",
+    page_icon="🚀",
     layout="wide",
     initial_sidebar_state="collapsed",
 )
@@ -97,34 +97,34 @@ STARTING_CONVERSION = 0.04  # signup to paid %
 # EVENT CATALOG
 # ===================================================================
 AUTO_EVENTS = [
-    dict(title="ð° Press Mention",
+    dict(title="📰 Press Mention",
          desc="A tech blog featured your product! New signups pour in.",
          delta=dict(new_customers=25)),
-    dict(title="ð¤ Partnership Win",
+    dict(title="🤝 Partnership Win",
          desc="A co-marketing partner shared your product with their audience.",
          delta=dict(new_customers=40)),
-    dict(title="ð¸ AWS Bill Spike",
+    dict(title="💸 AWS Bill Spike",
          desc="Server costs exceeded your forecast this month.",
          delta=dict(cash=-1200)),
-    dict(title="ð Competitor Launch",
+    dict(title="🏃 Competitor Launch",
          desc="A well-funded competitor launched a similar product at a lower price.",
          delta=dict(churn_bump=0.02)),
-    dict(title="ð Product Hunt Feature",
+    dict(title="🎉 Product Hunt Feature",
          desc="Your product trended on Product Hunt for a day!",
          delta=dict(new_customers=60, awareness_bump=8)),
-    dict(title="ð Critical Bug",
+    dict(title="🐛 Critical Bug",
          desc="A major bug caused data loss for some users. Trust took a hit.",
          delta=dict(churn_bump=0.03, morale=-5)),
-    dict(title="ð Organic Growth Spike",
+    dict(title="📈 Organic Growth Spike",
          desc="Word of mouth drove a surprise wave of signups.",
          delta=dict(new_customers=35)),
-    dict(title="ð§ Tech Debt Crunch",
+    dict(title="🔧 Tech Debt Crunch",
          desc="Accumulated shortcuts slowed your team to a crawl this month.",
          delta=dict(morale=-8, product_bump=-5)),
 ]
 
 CHOICE_EVENTS = [
-    dict(title="ð§âð» Key Engineer Got a FAANG Offer",
+    dict(title="🧑‍💻 Key Engineer Got a FAANG Offer",
          desc="Your best engineer is considering leaving.",
          options=[
              dict(label="Offer a $1K/mo raise to keep them",
@@ -134,7 +134,7 @@ CHOICE_EVENTS = [
                   delta=dict(morale=-12, product_bump=-8),
                   journal="Lost key engineer; team morale dropped"),
          ]),
-    dict(title="ð¢ Enterprise Client Interest",
+    dict(title="🏢 Enterprise Client Interest",
          desc="A large company wants a custom feature. It would take a month of dev time but pay $1K/mo ongoing.",
          options=[
              dict(label="Build the custom feature",
@@ -144,7 +144,7 @@ CHOICE_EVENTS = [
                   delta=dict(),
                   journal="Declined enterprise deal to stay focused on core product"),
          ]),
-    dict(title="ð Accelerator Invitation",
+    dict(title="🎓 Accelerator Invitation",
          desc="A top accelerator invited you to their next cohort. It costs a month of founder time but could yield $15K and mentorship.",
          options=[
              dict(label="Accept the accelerator spot",
@@ -154,7 +154,7 @@ CHOICE_EVENTS = [
                   delta=dict(),
                   journal="Declined accelerator to maintain execution speed"),
          ]),
-    dict(title="ð° Angel Investor Offer",
+    dict(title="💰 Angel Investor Offer",
          desc="An angel wants to invest $10K at a 20% discount to your last round. Quick cash, but dilutive.",
          options=[
              dict(label="Take the money",
@@ -164,7 +164,7 @@ CHOICE_EVENTS = [
                   delta=dict(),
                   journal="Declined angel investment to protect equity"),
          ]),
-    dict(title="ð¢ Influencer Partnership",
+    dict(title="📢 Influencer Partnership",
          desc="A social media influencer will promote your product for $800 flat.",
          options=[
              dict(label="Pay for the promotion",
@@ -173,6 +173,19 @@ CHOICE_EVENTS = [
              dict(label="Save the cash",
                   delta=dict(),
                   journal="Skipped influencer promotion to conserve runway"),
+         ]),
+    dict(title="⏸️ Unexpected Stability Window",
+         desc="This month is unusually calm. No major fires, no new opportunities. The fundamentals of your business are working well.",
+         options=[
+             dict(label="Maintain course—ride the wave",
+                  delta=dict(morale=5),
+                  journal="Maintained steady execution; team recharged"),
+             dict(label="Aggressively push for growth despite the calm",
+                  delta=dict(product_bump=-3, morale=-5),
+                  journal="Forced aggressive growth push; created unnecessary stress"),
+             dict(label="Use the calm to reflect and optimize operations",
+                  delta=dict(burn=-500, morale=3),
+                  journal="Took time to optimize; slightly reduced burn and improved morale"),
          ]),
 ]
 
@@ -225,14 +238,14 @@ BOARD_DECISIONS = {
 }
 
 ACHIEVEMENTS = {
-    "first_customer": ("ð¯ First Customer!", "You acquired your first paying customer."),
-    "ramen_profitable": ("ð Ramen Profitable", "Your MRR exceeds your monthly burn."),
-    "hundred_club": ("ð¯ The Hundred Club", "You reached 100 customers."),
-    "growth_10x": ("ð 10x Month", "You grew MRR by 10x in a single month."),
-    "survivor": ("ð¡ Crisis Survivor", "You made it through a crisis event."),
-    "first_hire": ("ð¥ Team of Two", "You made your first hire."),
-    "two_k_mrr": ("ð $2K MRR", "You crossed $2,000 in monthly recurring revenue."),
-    "five_k_mrr": ("ð $5K MRR", "You hit the ultimate goal!"),
+    "first_customer": ("🎯 First Customer!", "You acquired your first paying customer."),
+    "ramen_profitable": ("🍜 Ramen Profitable", "Your MRR exceeds your monthly burn."),
+    "hundred_club": ("💯 The Hundred Club", "You reached 100 customers."),
+    "growth_10x": ("📈 10x Month", "You grew MRR by 10x in a single month."),
+    "survivor": ("🛡 Crisis Survivor", "You made it through a crisis event."),
+    "first_hire": ("👥 Team of Two", "You made your first hire."),
+    "two_k_mrr": ("🌟 $2K MRR", "You crossed $2,000 in monthly recurring revenue."),
+    "five_k_mrr": ("🏆 $5K MRR", "You hit the ultimate goal!"),
 }
 
 
@@ -445,7 +458,7 @@ def apply_delta(delta):
 ARCHETYPES = {
     "The Perfectionist": {
         "condition": lambda p, m, s, o: p > 35,
-        "icon": "ð¬",
+        "icon": "🔬",
         "summary": "You invested heavily in building the best possible product.",
         "strength": "Product excellence and low churn. Customers who find you tend to stay.",
         "watch_out": "Spending too long perfecting before enough people know you exist. Great products still need distribution.",
@@ -453,7 +466,7 @@ ARCHETYPES = {
     },
     "The Hype Machine": {
         "condition": lambda p, m, s, o: m > 35,
-        "icon": "ð£",
+        "icon": "📣",
         "summary": "You prioritized awareness and getting the word out above all else.",
         "strength": "Strong top of funnel. Lots of people know about your product.",
         "watch_out": "High awareness with a weak product leads to high churn. People try it once and leave.",
@@ -461,7 +474,7 @@ ARCHETYPES = {
     },
     "The Closer": {
         "condition": lambda p, m, s, o: s > 35,
-        "icon": "ð¤",
+        "icon": "🤝",
         "summary": "You focused on converting leads and driving revenue through direct sales effort.",
         "strength": "Strong conversion rates and potentially higher deal sizes.",
         "watch_out": "Sales-heavy models can be hard to scale. If you need a human in every deal, growth has a ceiling.",
@@ -469,7 +482,7 @@ ARCHETYPES = {
     },
     "The Organizer": {
         "condition": lambda p, m, s, o: o > 35,
-        "icon": "âï¸",
+        "icon": "⚙️",
         "summary": "You invested heavily in team health, operations, and infrastructure.",
         "strength": "High morale and a stable team. Less firefighting, more consistency.",
         "watch_out": "Over-investing in ops before you have product market fit can mean a well-run ship sailing in the wrong direction.",
@@ -477,7 +490,7 @@ ARCHETYPES = {
     },
     "The Orchestrator": {
         "condition": lambda p, m, s, o: True,  # fallback
-        "icon": "ð¯",
+        "icon": "🎯",
         "summary": "You spread your resources across all areas, keeping things balanced.",
         "strength": "No single blind spot. You kept every area moving forward.",
         "watch_out": "Balance can also mean lack of conviction. Sometimes startups need to go all in on one lever to break through.",
@@ -509,11 +522,27 @@ def render_dashboard():
     fuel_pct = max(0, min(100, int(S.cash / STARTING_CASH * 100)))
     fuel_color = "#ef4444" if fuel_pct < 20 else "#f59e0b" if fuel_pct < 45 else "#10b981"
 
+    # Oxygen/runway color: green (6+ months), yellow (3-5 months), red (1-2 months)
+    if rw >= 6:
+        oxygen_color = "#10b981"  # green
+        oxygen_status = "✅ Healthy"
+    elif rw >= 3:
+        oxygen_color = "#f59e0b"  # yellow
+        oxygen_status = "⚠️ Caution"
+    else:
+        oxygen_color = "#ef4444"  # red
+        oxygen_status = "🔴 Critical"
+
     st.markdown(f"""
+    <div style="background: linear-gradient(90deg, {oxygen_color}33 0%, transparent 100%); border-left: 4px solid {oxygen_color}; padding: 1.2rem; border-radius: 8px; margin-bottom: 1.2rem;">
+        <div style="font-size: 1.8em; font-weight: 700; color: {oxygen_color};">{rw} months of oxygen remaining</div>
+        <div style="font-size: 0.9em; color: #6b7280; margin-top: 0.3rem;">{oxygen_status}</div>
+    </div>
+
     <div class="metric-row">
       <div class="m-box"><div class="m-val">${S.cash:,.0f}</div><div class="m-lbl">Cash</div></div>
       <div class="m-box"><div class="m-val">${S.burn:,.0f}</div><div class="m-lbl">Monthly Burn</div></div>
-      <div class="m-box"><div class="m-val {rw_color}">{rw} mo</div><div class="m-lbl">Runway</div></div>
+      <div class="m-box"><div class="m-val {rw_color}">${S.mrr:,.0f}</div><div class="m-lbl">Monthly Revenue</div></div>
       <div class="m-box"><div class="m-val">{S.customers}</div><div class="m-lbl">Customers</div></div>
       <div class="m-box"><div class="m-val {morale_color}">{S.morale}</div><div class="m-lbl">Morale</div></div>
       <div class="m-box"><div class="m-val">{S.team}</div><div class="m-lbl">Team Size</div></div>
@@ -535,7 +564,7 @@ def render_dashboard():
 def render_intro():
     st.markdown("""
     <div class="lx-header">
-        <h1>ð The Runway Game</h1>
+        <h1>🚀 The Runway Game</h1>
         <p>Survive, Grow, or Flame Out</p>
     </div>
     """, unsafe_allow_html=True)
@@ -549,7 +578,8 @@ def render_intro():
         You just scraped together **$48K** from savings and a small angel check for your startup.
         You have **12 months** to reach **$5K MRR** before your cash runs out.
 
-        **Estimated playtime: ~30-45 minutes**
+        ### ⏱️ Time Estimate
+        **~30-45 minutes** to play through all 12 months.
 
         Each month you will allocate your budget across four areas:
 
@@ -567,7 +597,7 @@ def render_intro():
         **Can you survive the runway?**
         """)
 
-        if st.button("ð Launch the Game", use_container_width=True):
+        if st.button("🚀 Launch the Game", use_container_width=True):
             S.stage = "play"
             st.rerun()
 
@@ -577,14 +607,14 @@ def render_intro():
         """)
         st.markdown(f"""
         <div class="card">
-            <p>ð° <strong>Cash:</strong> $48,000</p>
-            <p>ð¥ <strong>Monthly Burn:</strong> $5,000</p>
-            <p>â± <strong>Runway:</strong> 12 months</p>
-            <p>ðµ <strong>MRR:</strong> $0</p>
-            <p>ð¥ <strong>Customers:</strong> 0</p>
-            <p>ð <strong>Team:</strong> 1 (you)</p>
-            <p>ð <strong>Morale:</strong> 80/100</p>
-            <p>ð¯ <strong>Goal:</strong> $5K MRR</p>
+            <p>💰 <strong>Cash:</strong> $48,000</p>
+            <p>🔥 <strong>Monthly Burn:</strong> $5,000</p>
+            <p>⏱ <strong>Runway:</strong> 12 months</p>
+            <p>💵 <strong>MRR:</strong> $0</p>
+            <p>👥 <strong>Customers:</strong> 0</p>
+            <p>👔 <strong>Team:</strong> 1 (you)</p>
+            <p>😊 <strong>Morale:</strong> 80/100</p>
+            <p>🎯 <strong>Goal:</strong> $5K MRR</p>
         </div>
         """, unsafe_allow_html=True)
 
@@ -618,10 +648,10 @@ def render_play():
 
     c1, c2 = st.columns([3, 1])
     with c1:
-        product_pct  = st.slider("ð¨ Product Development", 0, 100, 30, 5, key="sl_p")
-        marketing_pct = st.slider("ð£ Marketing & Growth", 0, 100, 30, 5, key="sl_m")
-        sales_pct    = st.slider("ð¤ Sales & Biz Dev", 0, 100, 20, 5, key="sl_s")
-        ops_pct      = st.slider("âï¸ Team & Operations", 0, 100, 20, 5, key="sl_o")
+        product_pct  = st.slider("🔨 Product Development", 0, 100, 30, 5, key="sl_p")
+        marketing_pct = st.slider("📣 Marketing & Growth", 0, 100, 30, 5, key="sl_m")
+        sales_pct    = st.slider("🤝 Sales & Biz Dev", 0, 100, 20, 5, key="sl_s")
+        ops_pct      = st.slider("⚙️ Team & Operations", 0, 100, 20, 5, key="sl_o")
 
     total = product_pct + marketing_pct + sales_pct + ops_pct
     with c2:
@@ -632,7 +662,7 @@ def render_play():
             st.success("Ready to commit!")
 
     can_commit = total == 100
-    if st.button("â Commit This Month", use_container_width=True, disabled=not can_commit):
+    if st.button("✅ Commit This Month", use_container_width=True, disabled=not can_commit):
         # Run simulation
         simulate_month(product_pct, marketing_pct, sales_pct, ops_pct)
 
@@ -678,7 +708,7 @@ def render_play():
 
     # Journal sidebar
     if S.journal:
-        with st.expander("ð Founder Journal", expanded=False):
+        with st.expander("📓 Founder Journal", expanded=False):
             for entry in reversed(S.journal[-10:]):
                 st.write(entry)
 
@@ -772,7 +802,7 @@ def render_board():
 
     st.markdown(f"""
     <div class="event-card">
-        <h3>ð Board Decision Required</h3>
+        <h3>📋 Board Decision Required</h3>
         <p>{bd['desc']}</p>
     </div>
     """, unsafe_allow_html=True)
@@ -804,19 +834,19 @@ def render_gameover():
     # Determine outcome
     if S.cash <= 0:
         outcome = "flameout"
-        title = "ð¥ You Ran Out of Cash"
+        title = "💥 You Ran Out of Cash"
         subtitle = "Your startup flamed out. Even great ideas need runway."
     elif S.mrr >= WIN_MRR:
         outcome = "win"
-        title = "ð Victory: $5K MRR!"
+        title = "🏆 Victory: $5K MRR!"
         subtitle = "You built a real business. Investors are lining up to fund your next stage."
     elif S.mrr >= STRONG_MRR:
         outcome = "strong"
-        title = "ð Strong Traction"
+        title = "🌟 Strong Traction"
         subtitle = f"${S.mrr:,} MRR shows real momentum. You're on the path to product market fit."
     else:
         outcome = "modest"
-        title = "ð± Modest Progress"
+        title = "🌱 Modest Progress"
         subtitle = "Your startup survived but hasn't broken through yet. Time to reflect on what to do differently."
 
     st.markdown(f"""
@@ -866,14 +896,14 @@ def render_gameover():
 
     # Journal
     if S.journal:
-        st.subheader("ð Your Founder Journal")
+        st.subheader("📓 Your Founder Journal")
         with st.expander("View Full Timeline", expanded=False):
             for entry in S.journal:
                 st.write(entry)
 
     # Badges
     if S.badges:
-        st.subheader("ð Achievements Unlocked")
+        st.subheader("🏅 Achievements Unlocked")
         badge_cols = st.columns(min(4, len(S.badges)))
         for i, b in enumerate(S.badges):
             with badge_cols[i % len(badge_cols)]:
@@ -889,7 +919,7 @@ def render_gameover():
 
     # Restart
     st.divider()
-    if st.button("ð Play Again", use_container_width=True, key="restart_btn"):
+    if st.button("🔄 Play Again", use_container_width=True, key="restart_btn"):
         for k in list(st.session_state.keys()):
             del st.session_state[k]
         st.rerun()
