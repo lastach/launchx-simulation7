@@ -1076,53 +1076,45 @@ def render_gameover():
         </div>
         """, unsafe_allow_html=True)
 
-    # Archetype → named founder case studies (grounding, per HBS-rigor audit)
-    archetype_cases = {
-        "Product Perfectionist": {
-            "founders": "Drew Houston (Dropbox), Jack Dorsey (Square)",
-            "note": "Both spent 12+ months on product before growth spend. Houston's MVP video "
-                    "(Dropbox, 2008) validated demand before a single engineer shipped the product.",
-            "ref": "Houston, HBS Case 9-812-035; Dorsey, Acquired podcast (2019)"
-        },
-        "Growth Hacker": {
-            "founders": "Sean Ellis (Dropbox / Qualaroo), Andrew Chen (Uber)",
-            "note": "Growth-first founders win when the product already has a retention signal. "
-                    "Ellis coined the 'Product-Market Fit Survey' after seeing growth spend wasted on "
-                    "pre-PMF products.",
-            "ref": "Ellis & Brown, *Hacking Growth* (2017); Chen, *The Cold Start Problem* (2021)"
-        },
-        "Sales Driver": {
-            "founders": "Aaron Ross (Salesforce), Jason Lemkin (EchoSign)",
-            "note": "Outbound-led founders scale by building the repeatable sales playbook "
-                    "*before* adding headcount. Ross's 'Predictable Revenue' model is the canonical text.",
-            "ref": "Ross & Tyler, *Predictable Revenue* (2011); SaaStr: Lemkin on 'The First 10 Sales Hires'"
-        },
-        "Team Builder": {
-            "founders": "Patrick Collison (Stripe), Ben Horowitz (Opsware)",
-            "note": "Team-first founders invest in operating cadence and hiring bar early. Horowitz's "
-                    "*Hard Thing About Hard Things* is the definitive account of ops-led founder building.",
-            "ref": "Horowitz, *The Hard Thing About Hard Things* (2014); Collison, Tyler Cowen interview (2019)"
-        },
-        "Balanced Operator": {
-            "founders": "Melanie Perkins (Canva), Daniel Ek (Spotify)",
-            "note": "Balanced founders avoid over-indexing on any single lever. The risk: without a strong "
-                    "primary instinct, they can be slow to double down when signal arrives.",
-            "ref": "Carlsson, *Spotify Untold* (2021); Forbes, Canva profile (2022)"
-        },
+    # Archetype → operating failure mode (mechanism-level, no name-drops)
+    archetype_risks = {
+        "Product Perfectionist": (
+            "You'll over-invest in polish before demand is proven. The specific trap: "
+            "building a feature nobody asked for because it's *interesting*. Mitigation — "
+            "gate every feature on a falsifiable customer-demand signal before engineering starts."
+        ),
+        "Growth Hacker": (
+            "Growth spend on a pre-retention product multiplies losses. The specific trap: "
+            "optimizing acquisition before you've seen a cohort retention curve flatten. "
+            "Mitigation — require ≥40% Week-4 retention before any paid-acquisition dollars."
+        ),
+        "Sales Driver": (
+            "You'll scale headcount before the sales motion is repeatable. The specific trap: "
+            "hiring reps #3-10 off the back of a founder-led pipeline that doesn't transfer. "
+            "Mitigation — require two consecutive quarters of rep #1 and #2 hitting quota on a "
+            "written playbook before the next hire."
+        ),
+        "Team Builder": (
+            "You'll over-index on operating cadence before you have a product to operate. "
+            "The specific trap: rigorous OKRs tracking the wrong metric. Mitigation — tie every "
+            "team ritual to a single north-star that survives customer scrutiny."
+        ),
+        "Balanced Operator": (
+            "You'll be slow to double down when signal arrives. The specific trap: under-allocating "
+            "to the lever that's actually working because it feels risky to concentrate. "
+            "Mitigation — pre-commit to a 'if X signal appears, we reallocate Y%' rule."
+        ),
     }
-    case = archetype_cases.get(arch_name)
-    if case:
+    risk = archetype_risks.get(arch_name)
+    if risk:
         st.markdown(f"""
         <div style="background:#f3e8ff;border:1px solid #c4b5fd;border-radius:8px;
                     padding:1rem 1.2rem;margin-top:0.75rem;">
             <div style="font-weight:700;color:#4c1d95;margin-bottom:0.3rem;">
-                Founders who operate like you
+                The failure mode of this archetype
             </div>
             <div style="color:#3730a3;font-size:0.95rem;line-height:1.55;">
-                <strong>{case['founders']}.</strong> {case['note']}
-            </div>
-            <div style="color:#6b21a8;font-size:0.8rem;margin-top:0.4rem;font-style:italic;">
-                Reference: {case['ref']}
+                {risk}
             </div>
         </div>
         """, unsafe_allow_html=True)
