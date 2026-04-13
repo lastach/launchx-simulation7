@@ -425,6 +425,97 @@ def simulate_month(product_pct, marketing_pct, sales_pct, ops_pct):
     return new_custs, lost
 
 
+def project_month(product_usd: int, marketing_usd: int, sales_usd: int, ops_usd: int) -> dict:
+    """Deterministic forward projection of one month given a proposed spend mix.
+    Uses the SAME core math as simulate_month() but without randomness. Returns
+    a full projected P&L + unit economics so the learner can see the
+    consequences of their allocation live, BEFORE committing.
+    """
+    total_spend = product_usd + marketing_usd + sales_usd + ops_usd
+    if total_spend <= 0:
+        return {
+            "total_spend": 0, "projected_new_custs": 0, "projected_lost": 0,
+            "projected_mrr": S.mrr, "projected_cash": S.cash - 0,
+            "net_burn": S.burn - S.mrr, "runway_months": runway_months(),
+            "cac": 0, "ltv": 0, "ltv_cac": 0, "payback_months": 0,
+            "product_pct": 0, "marketing_pct": 0, "sales_pct": 0, "ops_pct": 0,
+        }
+    product_pct = product_usd / total_spend * 100
+    marketing_pct = marketing_usd / total_spend * 100
+    sales_pct = sales_usd / total_spend * 100
+    ops_pct = ops_usd / total_spend * 100
+
+    # Replicate customer-acquisition math from simulate_month (no RNG)
+    product_reputation = max(0.3, S.product / 60)
+    min_alloc = min(product_pct, marketing_pct, sales_pct, ops_pct)
+    synergy = 1.0 + (min_alloc / 100) * 0.5
+
+    base_signups = marketing_pct * 0.7 * (S.awareness / 100) * product_reputation
+    inbound = base_signups * S.conversion * 7 * S.signup_multiplier * synergy
+    outbound_eff = (1 + S.sales_buff + S.sales_buff_temp) * product_reputation * max(0.3, S.awareness / 80)
+    outbound = sales_pct * 0.18 * outbound_eff
+    wom = 0.0
+    if S.product >= 70:
+        wom = (S.product - 60) * 0.15 * (S.customers / max(1, 50))
+    new_custs = max(0, int(inbound + outbound + wom))
+
+    # Churn projection
+    effective_churn = S.churn
+    if S.product >= 80: effective_churn -= 0.025
+    elif S.product >= 65: effective_churn -= 0.01
+    elif S.product < 35: effective_churn += 0.05
+    elif S.product < 50: effective_churn += 0.03
+    elif S.product < 65: effective_churn += 0.01
+    if S.morale < 30: effective_churn += 0.05
+    elif S.morale < 50: effective_churn += 0.03
+    elif S.morale < 65: effective_churn += 0.01
+    effective_churn = max(0.005, min(0.30, effective_churn))
+    lost = int(S.customers * effective_churn)
+
+    # Projected end-of-month state
+    projected_customers = max(0, S.customers + new_custs - lost)
+    projected_mrr = projected_customers * S.acv
+    projected_cash = S.cash - total_spend + projected_mrr
+    net_burn = total_spend - projected_mrr
+
+    # Runway = cash / net monthly burn (99 if profitable)
+    if net_burn <= 0:
+        runway = 99
+    else:
+        runway = max(0, int(projected_cash / net_burn)) if projected_cash > 0 else 0
+
+    # Unit economics: CAC = (sales+marketing) / new_custs
+    ca_spend = marketing_usd + sales_usd
+    cac = (ca_spend / new_custs) if new_custs > 0 else 0
+    # LTV = ACV / churn (perpetuity at effective churn rate)
+    ltv = (S.acv / effective_churn) if effective_churn > 0 else S.acv * 12
+    ltv_cac = (ltv / cac) if cac > 0 else 0
+    # Payback: CAC / monthly contribution (assume 80% gross margin on SaaS)
+    gross_margin = 0.80
+    monthly_cm_per_cust = S.acv * gross_margin
+    payback = (cac / monthly_cm_per_cust) if monthly_cm_per_cust > 0 and cac > 0 else 0
+
+    return {
+        "total_spend": total_spend,
+        "projected_new_custs": new_custs,
+        "projected_lost": lost,
+        "projected_customers": projected_customers,
+        "projected_mrr": projected_mrr,
+        "projected_cash": projected_cash,
+        "net_burn": net_burn,
+        "runway_months": runway,
+        "effective_churn": effective_churn,
+        "cac": cac,
+        "ltv": ltv,
+        "ltv_cac": ltv_cac,
+        "payback_months": payback,
+        "product_pct": product_pct,
+        "marketing_pct": marketing_pct,
+        "sales_pct": sales_pct,
+        "ops_pct": ops_pct,
+    }
+
+
 def apply_delta(delta):
     """Apply an event/board delta dict to the game state."""
     S.cash += delta.get("cash", 0)
@@ -681,12 +772,62 @@ def render_play():
             st.error(f"Cannot spend more than ${S.cash:,.0f}.")
         else:
             st.success("Ready to commit!")
-        # Visible impact preview
-        prod_preview = product_usd * 0.20 / 100 * 5  # approx product points
-        mkt_preview = marketing_usd * 0.15 / 100 * 7  # approx awareness lift
-        st.markdown(f"**Impact preview:**")
-        st.caption(f"📊 Product +{prod_preview:.1f} quality")
-        st.caption(f"📢 Awareness +{mkt_preview:.1f}")
+
+    # Live projected P&L — deterministic preview of this allocation
+    proj = project_month(product_usd, marketing_usd, sales_usd, ops_usd)
+    st.markdown("##### 📊 Live Projection (deterministic — actual results include variance)")
+
+    p1, p2, p3, p4 = st.columns(4)
+    with p1:
+        st.metric("Proj. New Customers", f"+{proj['projected_new_custs']}",
+                  delta=f"-{proj['projected_lost']} churn" if proj['projected_lost'] > 0 else None,
+                  delta_color="inverse")
+    with p2:
+        mrr_delta = proj["projected_mrr"] - S.mrr
+        st.metric("Proj. End-of-Month MRR", f"${proj['projected_mrr']:,.0f}",
+                  delta=f"${mrr_delta:+,.0f}")
+    with p3:
+        nb_color = "inverse" if proj["net_burn"] > 0 else "normal"
+        st.metric("Net Burn", f"${proj['net_burn']:,.0f}/mo",
+                  help="Spend minus projected MRR. Negative means profitable.")
+    with p4:
+        runway_label = "∞ (profitable)" if proj["runway_months"] >= 99 else f"{proj['runway_months']} mo"
+        st.metric("Projected Runway", runway_label,
+                  help="Months until cash runs out at this net burn (after projected MRR)")
+
+    # Unit economics row
+    u1, u2, u3, u4 = st.columns(4)
+    with u1:
+        cac_display = f"${proj['cac']:,.0f}" if proj["cac"] > 0 else "—"
+        st.metric("Implied CAC", cac_display,
+                  help="(marketing + sales spend) ÷ new customers acquired")
+    with u2:
+        ltv_display = f"${proj['ltv']:,.0f}" if proj["ltv"] > 0 else "—"
+        st.metric("LTV", ltv_display, help="ACV ÷ effective churn rate")
+    with u3:
+        ratio = proj["ltv_cac"]
+        ratio_label = f"{ratio:.1f} : 1" if ratio > 0 else "—"
+        st.metric("LTV : CAC", ratio_label, help="≥ 3.0 is healthy")
+    with u4:
+        pb = proj["payback_months"]
+        pb_label = f"{pb:.1f} mo" if pb > 0 else "—"
+        st.metric("Payback", pb_label, help="Months of gross margin to recover CAC")
+
+    # Mini P&L line items
+    with st.expander("📋 Projected Monthly P&L", expanded=False):
+        st.markdown(f"""
+| Line item | Amount |
+|---|---:|
+| Projected MRR | ${proj['projected_mrr']:,.0f} |
+| Gross margin @ 80% | ${proj['projected_mrr'] * 0.80:,.0f} |
+| Product & engineering | -${product_usd:,} |
+| Marketing & growth | -${marketing_usd:,} |
+| Sales & biz dev | -${sales_usd:,} |
+| Team & operations | -${ops_usd:,} |
+| **Net (gross margin − opex)** | **${proj['projected_mrr'] * 0.80 - total_spend:,.0f}** |
+| Cash at start of month | ${S.cash:,.0f} |
+| Cash at end of month | ${proj['projected_cash']:,.0f} |
+""")
 
     can_commit = 1500 <= total_spend <= S.cash
     if st.button("✅ Commit This Month", use_container_width=True, disabled=not can_commit):
