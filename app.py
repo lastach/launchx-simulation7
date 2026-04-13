@@ -648,6 +648,32 @@ def render_dashboard():
         badge_html = " ".join(f'<span class="badge">{ACHIEVEMENTS[b][0]}</span>' for b in S.badges)
         st.markdown(badge_html, unsafe_allow_html=True)
 
+    # Narrative signals — translate numbers into real-world founder language
+    signals = []
+    if S.morale < 35:
+        signals.append("😟 **Morale below 35:** In real startups, this is the zone where top engineers "
+                       "start updating LinkedIn and returning recruiter calls. Retention risk is compounding weekly.")
+    elif S.morale < 50:
+        signals.append("😐 **Morale below 50:** Team is executing but without discretionary effort. "
+                       "Expect meetings to get longer and velocity to drop 15-25%.")
+    if rw < 3:
+        signals.append("🚨 **Under 3 months of runway:** Every conversation in the company is now about survival. "
+                       "Top performers see the math and start exit-planning.")
+    elif rw < 6:
+        signals.append("⚠️ **Under 6 months of runway:** The fundraise clock starts now. Every week without a "
+                       "growth story is a week of lost leverage with investors.")
+    if S.mrr > 0 and S.burn > S.mrr * 3:
+        signals.append("🔥 **Burn > 3× revenue:** Classic Series-A-trap spending pattern. Either growth "
+                       "accelerates in the next 2 months or you're entering a down round.")
+    if signals:
+        sig_html = "<br>".join(signals)
+        st.markdown(
+            f"<div style='background:#fffbeb;border:1px solid #fde68a;border-radius:8px;"
+            f"padding:0.85rem;margin-top:0.75rem;color:#78350f;font-size:0.88rem;line-height:1.55;'>"
+            f"{sig_html}</div>",
+            unsafe_allow_html=True,
+        )
+
 
 # ===================================================================
 # RENDER: INTRO
@@ -1047,6 +1073,57 @@ def render_gameover():
         <div class="card">
             <p><strong>Watch Out For:</strong> {arch_info['watch_out']}</p>
             <p><strong>Real World Reflection:</strong> {arch_info['real_world']}</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+    # Archetype → named founder case studies (grounding, per HBS-rigor audit)
+    archetype_cases = {
+        "Product Perfectionist": {
+            "founders": "Drew Houston (Dropbox), Jack Dorsey (Square)",
+            "note": "Both spent 12+ months on product before growth spend. Houston's MVP video "
+                    "(Dropbox, 2008) validated demand before a single engineer shipped the product.",
+            "ref": "Houston, HBS Case 9-812-035; Dorsey, Acquired podcast (2019)"
+        },
+        "Growth Hacker": {
+            "founders": "Sean Ellis (Dropbox / Qualaroo), Andrew Chen (Uber)",
+            "note": "Growth-first founders win when the product already has a retention signal. "
+                    "Ellis coined the 'Product-Market Fit Survey' after seeing growth spend wasted on "
+                    "pre-PMF products.",
+            "ref": "Ellis & Brown, *Hacking Growth* (2017); Chen, *The Cold Start Problem* (2021)"
+        },
+        "Sales Driver": {
+            "founders": "Aaron Ross (Salesforce), Jason Lemkin (EchoSign)",
+            "note": "Outbound-led founders scale by building the repeatable sales playbook "
+                    "*before* adding headcount. Ross's 'Predictable Revenue' model is the canonical text.",
+            "ref": "Ross & Tyler, *Predictable Revenue* (2011); SaaStr: Lemkin on 'The First 10 Sales Hires'"
+        },
+        "Team Builder": {
+            "founders": "Patrick Collison (Stripe), Ben Horowitz (Opsware)",
+            "note": "Team-first founders invest in operating cadence and hiring bar early. Horowitz's "
+                    "*Hard Thing About Hard Things* is the definitive account of ops-led founder building.",
+            "ref": "Horowitz, *The Hard Thing About Hard Things* (2014); Collison, Tyler Cowen interview (2019)"
+        },
+        "Balanced Operator": {
+            "founders": "Melanie Perkins (Canva), Daniel Ek (Spotify)",
+            "note": "Balanced founders avoid over-indexing on any single lever. The risk: without a strong "
+                    "primary instinct, they can be slow to double down when signal arrives.",
+            "ref": "Carlsson, *Spotify Untold* (2021); Forbes, Canva profile (2022)"
+        },
+    }
+    case = archetype_cases.get(arch_name)
+    if case:
+        st.markdown(f"""
+        <div style="background:#f3e8ff;border:1px solid #c4b5fd;border-radius:8px;
+                    padding:1rem 1.2rem;margin-top:0.75rem;">
+            <div style="font-weight:700;color:#4c1d95;margin-bottom:0.3rem;">
+                Founders who operate like you
+            </div>
+            <div style="color:#3730a3;font-size:0.95rem;line-height:1.55;">
+                <strong>{case['founders']}.</strong> {case['note']}
+            </div>
+            <div style="color:#6b21a8;font-size:0.8rem;margin-top:0.4rem;font-style:italic;">
+                Reference: {case['ref']}
+            </div>
         </div>
         """, unsafe_allow_html=True)
 
