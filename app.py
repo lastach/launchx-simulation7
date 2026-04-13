@@ -278,6 +278,10 @@ def init():
         marketing_buff=0.0,
         sales_buff=0.0,
         sales_buff_temp=0.0,
+        # --- Rigor: prior-month allocation + thrash tracker ---
+        last_alloc=None,        # (product_pct, marketing_pct, sales_pct, ops_pct)
+        thrash_months=0,        # count of months flagged as strategy thrash
+        concentration_months=0, # count of months with >70% in one bucket
     )
     for k, v in defaults.items():
         if k not in st.session_state:
@@ -323,12 +327,46 @@ def simulate_month(product_pct, marketing_pct, sales_pct, ops_pct):
     S.alloc_hist["sales"] += sales_pct
     S.alloc_hist["ops"] += ops_pct
 
+    # ---- Rigor: strategy-thrash penalty ----------------------------------
+    # Real orgs cannot frictionlessly re-pivot effort month-to-month. If the
+    # total absolute swing across all four buckets exceeds 60 points (e.g.
+    # moving 30pts out of product and re-distributing elsewhere), the month
+    # suffers a thrash_multiplier < 1.0 on the effort-to-outcome conversion
+    # in every bucket. This models onboarding/offboarding costs, context
+    # switches, and strategy whiplash.
+    thrash_multiplier = 1.0
+    if S.last_alloc is not None:
+        lp, lm, ls, lo = S.last_alloc
+        swing = (abs(product_pct - lp) + abs(marketing_pct - lm)
+                 + abs(sales_pct - ls) + abs(ops_pct - lo))
+        if swing > 60:
+            # 1.0 at swing=60, drops to 0.75 at swing=160+
+            thrash_multiplier = max(0.75, 1.0 - (swing - 60) / 400)
+            S.thrash_months += 1
+    S.last_alloc = (product_pct, marketing_pct, sales_pct, ops_pct)
+
+    # ---- Rigor: over-concentration diminishing returns -------------------
+    # Within a single month, putting 70%+ of effort on a single category
+    # hits organizational capacity limits (one engineer can only ship so
+    # fast). Every point above 70 on a category converts at sqrt scaling.
+    def _concentration_gain(pct: float) -> float:
+        if pct <= 70:
+            return float(pct)
+        # 70 baseline + sqrt growth on the excess
+        return 70.0 + math.sqrt(max(0.0, pct - 70)) * 5.0
+    if max(product_pct, marketing_pct, sales_pct, ops_pct) >= 70:
+        S.concentration_months += 1
+    eff_p = _concentration_gain(product_pct)
+    eff_m = _concentration_gain(marketing_pct)
+    eff_s = _concentration_gain(sales_pct)
+    eff_o = _concentration_gain(ops_pct)
+
     # ---- Product quality ----
-    prod_gain = product_pct * 0.20 * (1 + S.product_buff)
+    prod_gain = eff_p * 0.20 * (1 + S.product_buff) * thrash_multiplier
     S.product = min(95, S.product + prod_gain)
 
     # ---- Awareness ----
-    mkt_gain = marketing_pct * 0.15 * (1 + S.marketing_buff)
+    mkt_gain = eff_m * 0.15 * (1 + S.marketing_buff) * thrash_multiplier
     S.awareness = min(95, S.awareness + mkt_gain)
 
     # ---- Product-driven awareness (good products get organic press & reviews) ----
@@ -337,7 +375,7 @@ def simulate_month(product_pct, marketing_pct, sales_pct, ops_pct):
         S.awareness = min(95, S.awareness + organic_awareness)
 
     # ---- Conversion ----
-    sales_gain = sales_pct * 0.0004 * (1 + S.sales_buff + S.sales_buff_temp)
+    sales_gain = eff_s * 0.0004 * (1 + S.sales_buff + S.sales_buff_temp) * thrash_multiplier
     S.conversion = min(0.30, S.conversion + sales_gain)
 
     # ---- Morale ----
@@ -347,6 +385,10 @@ def simulate_month(product_pct, marketing_pct, sales_pct, ops_pct):
         S.morale = min(100, S.morale + 1)
     else:
         S.morale = max(10, S.morale - 4)
+
+    # Thrash additionally demoralizes the team
+    if thrash_multiplier < 1.0:
+        S.morale = max(10, S.morale - int((1.0 - thrash_multiplier) * 20))
 
     # ---- Synergy bonus for balanced allocation ----
     min_alloc = min(product_pct, marketing_pct, sales_pct, ops_pct)
@@ -1132,6 +1174,32 @@ def render_gameover():
         ]
     })
     st.bar_chart(alloc_data.set_index("Category"), color="#6f42c1")
+
+    # --- Rigor: strategy discipline readout --------------------------------
+    thrash_n = getattr(S, "thrash_months", 0) or 0
+    conc_n = getattr(S, "concentration_months", 0) or 0
+    disc_lines = []
+    if thrash_n:
+        disc_lines.append(
+            f"**Strategy thrash:** {thrash_n} month(s) you swung your allocation "
+            f"by more than 60 points vs. the prior month. Each of those months "
+            f"took a productivity hit (up to −25%) and a morale drag. Real teams "
+            f"cannot re-point effort frictionlessly — changing direction has an "
+            f"onboarding cost."
+        )
+    if conc_n >= 3:
+        disc_lines.append(
+            f"**Over-concentration:** {conc_n} month(s) you put 70%+ of effort in "
+            f"a single category. Past 70%, incremental allocation converts at "
+            f"sqrt scaling — you hit organizational capacity limits (one engineer "
+            f"can only ship so fast, one marketer can only run so many campaigns). "
+            f"The last 15 points of a 95% allocation deliver far less than the "
+            f"first 15 points."
+        )
+    if disc_lines:
+        st.subheader("Strategy Discipline")
+        for line in disc_lines:
+            st.markdown(line)
 
     # Journal
     if S.journal:
