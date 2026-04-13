@@ -420,7 +420,7 @@ def simulate_month(product_pct, marketing_pct, sales_pct, ops_pct):
     if S.mrr >= 5000:
         add_badge("five_k_mrr")
 
-    journal(f"Allocated: Prod {product_pct}%, Mkt {marketing_pct}%, Sales {sales_pct}%, Ops {ops_pct}% | +{new_custs} customers, {lost} churned | MRR ${S.mrr:,}")
+    journal(f"Spend $ {S.burn:,} | Prod {product_pct}% / Mkt {marketing_pct}% / Sales {sales_pct}% / Ops {ops_pct}% | +{new_custs} customers, {lost} churned | MRR ${S.mrr:,}")
 
     return new_custs, lost
 
@@ -643,27 +643,56 @@ def render_play():
     render_dashboard()
     st.divider()
 
-    st.subheader("Allocate Your Monthly Budget")
-    st.caption("Drag sliders so they sum to exactly 100%, then commit.")
+    st.subheader("Allocate Your Monthly Spend")
+    max_spend_this_month = max(1500, int(S.cash))
+    st.caption(
+        f"You have **${S.cash:,.0f}** in the bank and earned **${S.mrr:,.0f}** in MRR last month. "
+        f"Decide how to deploy cash across four categories. The sum becomes this month's burn "
+        f"(minimum $1,500 to keep the lights on, max $ {max_spend_this_month:,} = your cash)."
+    )
 
     c1, c2 = st.columns([3, 1])
     with c1:
-        product_pct  = st.slider("🔨 Product Development", 0, 100, 30, 5, key="sl_p")
-        marketing_pct = st.slider("📣 Marketing & Growth", 0, 100, 30, 5, key="sl_m")
-        sales_pct    = st.slider("🤝 Sales & Biz Dev", 0, 100, 20, 5, key="sl_s")
-        ops_pct      = st.slider("⚙️ Team & Operations", 0, 100, 20, 5, key="sl_o")
+        product_usd  = st.number_input("🔨 Product Development ($)",   min_value=0, max_value=max_spend_this_month, value=min(1500, max_spend_this_month), step=250, key="usd_p",
+                                       help="Engineers, design, QA. Each $500 adds ~2 product quality points.")
+        marketing_usd = st.number_input("📣 Marketing & Growth ($)",    min_value=0, max_value=max_spend_this_month, value=min(1500, max_spend_this_month), step=250, key="usd_m",
+                                        help="Ads, content, PR. Drives awareness and top-of-funnel signups.")
+        sales_usd    = st.number_input("🤝 Sales & Biz Dev ($)",       min_value=0, max_value=max_spend_this_month, value=min(1000, max_spend_this_month), step=250, key="usd_s",
+                                       help="Outbound, deal closing, partnerships. Improves conversion rate.")
+        ops_usd      = st.number_input("⚙️ Team & Operations ($)",     min_value=0, max_value=max_spend_this_month, value=min(1000, max_spend_this_month), step=250, key="usd_o",
+                                       help="HR, tools, admin, morale. Keeps team productive and retained.")
 
-    total = product_pct + marketing_pct + sales_pct + ops_pct
+    total_spend = product_usd + marketing_usd + sales_usd + ops_usd
+    # Convert dollars to percentages for the existing simulation engine
+    if total_spend > 0:
+        product_pct  = int(round(product_usd  / total_spend * 100))
+        marketing_pct = int(round(marketing_usd / total_spend * 100))
+        sales_pct    = int(round(sales_usd    / total_spend * 100))
+        ops_pct      = 100 - product_pct - marketing_pct - sales_pct  # absorb rounding
+    else:
+        product_pct = marketing_pct = sales_pct = ops_pct = 0
+
     with c2:
-        st.metric("Total", f"{total}%")
-        if total != 100:
-            st.warning(f"Must equal 100%. Currently at {total}%.")
+        st.metric("Monthly Burn", f"${total_spend:,}")
+        st.caption(f"Cash after burn: ${S.cash - total_spend + S.mrr:,.0f}")
+        if total_spend < 1500:
+            st.warning("Minimum spend is $1,500/month.")
+        elif total_spend > S.cash:
+            st.error(f"Cannot spend more than ${S.cash:,.0f}.")
         else:
             st.success("Ready to commit!")
+        # Visible impact preview
+        prod_preview = product_usd * 0.20 / 100 * 5  # approx product points
+        mkt_preview = marketing_usd * 0.15 / 100 * 7  # approx awareness lift
+        st.markdown(f"**Impact preview:**")
+        st.caption(f"📊 Product +{prod_preview:.1f} quality")
+        st.caption(f"📢 Awareness +{mkt_preview:.1f}")
 
-    can_commit = total == 100
+    can_commit = 1500 <= total_spend <= S.cash
     if st.button("✅ Commit This Month", use_container_width=True, disabled=not can_commit):
-        # Run simulation
+        # Lock in the actual dollar burn for this month
+        S.burn = total_spend
+        # Run simulation with converted percentages (and actual burn)
         simulate_month(product_pct, marketing_pct, sales_pct, ops_pct)
 
         # Check bankruptcy
